@@ -15,6 +15,8 @@ import (
 	"strconv"
 )
 
+// Using just a subset of the data to load to mongo @TODO try with all attributes
+
 type Building struct { //Choosing a subset of the data
 	// _id
 	// Geom       string  `bson:the_geom`
@@ -55,7 +57,7 @@ func readCSV(fname string) {
 	fmt.Println("connected to mongo!!")
 	defer mongoSession.Close()
 	mongoSession.SetMode(mgo.Monotonic, true)
-	collection := mongoSession.DB("testetl").C("People")
+	collection := mongoSession.DB("topos").C("testCollection")
 
 	csvFile, err := os.Open(fname)
 	if err != nil {
@@ -82,12 +84,15 @@ func readCSV(fname string) {
 			fmt.Println("skipped row: ", row)
 			continue
 		}
+
+		// Typecasting all numerical attributes
 		c, err := strconv.ParseInt(row[2], 10, 64)
 		e, err := strconv.ParseInt(row[9], 10, 64)
 		f, err := strconv.ParseInt(row[10], 10, 64)
-
 		d, err := strconv.ParseFloat(row[8], 64)
 		g, err := strconv.ParseFloat(row[11], 64)
+
+		// We are also storing the name row[3] that does not require typecast
 		bulk.Insert(Building{c, row[3], d, e, f, g})
 		if count%10000 == 0 { // We are doing bulk inserts because its much faster than inserting documents one at a time
 			_, err = bulk.Run()
@@ -96,21 +101,17 @@ func readCSV(fname string) {
 			}
 			bulk = collection.Bulk()
 		}
-		if count%100000 == 0 {
+		if count%100000 == 0 { // For a non-irritating log
 			fmt.Println(count)
 		}
 
 	}
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	fmt.Println("Done")
-	// return config
+	fmt.Println("Done loading the data to mongo")
 }
 
 func main() {
 	runtime.GOMAXPROCS(8) // For consurrent processing
 	readCSV("building.csv")
-	fmt.Println("all done")
+	fmt.Println("All operations completed. Exiting the application ...")
 
 }
