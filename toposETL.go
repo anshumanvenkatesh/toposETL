@@ -36,7 +36,7 @@ type Building struct { //Choosing a subset of the data
 	// GEOMSOURCE string `bson:"GEOMSOURCE"`
 }
 
-func readJSON(fname string) map[string]interface{} { // just in case I need to read config from a json file
+func readJSON(fname string) map[string]string { // just in case I need to read config from a json file
 	jsonFile, err := os.Open(fname)
 	if err != nil {
 		fmt.Println("error: ", err)
@@ -44,12 +44,12 @@ func readJSON(fname string) map[string]interface{} { // just in case I need to r
 	fmt.Println("Opend json file: ", jsonFile)
 	defer jsonFile.Close()
 	byteValue, _ := ioutil.ReadAll(jsonFile)
-	var config map[string]interface{}
+	var config map[string]string
 	json.Unmarshal(byteValue, &config)
 	return config
 }
 
-func readCSV(fname string) {
+func readCSV(fname string, dbName string, collectionName string) {
 	mongoSession, err := mgo.Dial("127.0.0.1:27017")
 	if err != nil {
 		log.Fatalf("CreateSession: %s\n", err.Error())
@@ -57,7 +57,7 @@ func readCSV(fname string) {
 	fmt.Println("connected to mongo!!")
 	defer mongoSession.Close()
 	mongoSession.SetMode(mgo.Monotonic, true)
-	collection := mongoSession.DB("topos").C("testCollection")
+	collection := mongoSession.DB(dbName).C(collectionName)
 
 	csvFile, err := os.Open(fname)
 	if err != nil {
@@ -110,8 +110,9 @@ func readCSV(fname string) {
 }
 
 func main() {
-	runtime.GOMAXPROCS(8) // For consurrent processing
-	readCSV("building.csv")
+	runtime.GOMAXPROCS(8) // For concurrent processing
+	config := readJSON("config.json")
+	readCSV("building.csv", config["db"], config["collection"])
 	fmt.Println("All operations completed. Exiting the application ...")
 
 }

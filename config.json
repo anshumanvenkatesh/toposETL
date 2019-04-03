@@ -1,3 +1,4 @@
 {
-    "foo": "bar"
+    "db": "topos",
+    "collection": "test"
 }
